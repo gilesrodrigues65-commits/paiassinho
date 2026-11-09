@@ -1,0 +1,526 @@
+# paiassinho--[[ PAIASSINHO HUB V31 | BY PAIASSINHO | Autokill no Milissegundo ]]
+
+local P  = game:GetService("Players")
+local R  = game:GetService("RunService")
+local U  = game:GetService("UserInputService")
+local T  = game:GetService("TweenService")
+local LP = P.LocalPlayer
+
+local old = LP:WaitForChild("PlayerGui"):FindFirstChild("PAIASSINHO_HUB")
+if old then old:Destroy() end
+
+local CFG = {
+    AA = { RAD = 25, CD = 1.0, KW = {"algema","algemas","cuff","cuffs","handcuff","arrest","prisao","prisão","prisoner","detention","police"}, ESCAPE_DIST = 40 },
+    SK = { TIMEOUT = 8 },
+    AK = { 
+        ANIM_ID = "rbxassetid://7126364339976"
+    }
+}
+
+-- O AUTOKILL JÁ COMEÇA ATIVADO
+local ST = { AA = false, AK = true, SK = false, IJ = false, NC = false }
+
+local function char()
+    local c = LP.Character
+    if not c then return end
+    local h = c:FindFirstChild("HumanoidRootPart")
+    local m = c:FindFirstChildOfClass("Humanoid")
+    if h and m and m.Health > 0 then return c, h, m end
+end
+
+local function isCuff(t)
+    if not t or not t:IsA("Tool") then return false end
+    local n = string.lower(t.Name)
+    for _, k in ipairs(CFG.AA.KW) do if string.find(n, k, 1, true) then return true end end
+    return false
+end
+
+local function hasEquippedCuff(pl)
+    if pl == LP then return false end
+    local c = pl.Character
+    if not c then return false end
+    local t = c:FindFirstChildOfClass("Tool")
+    return t and isCuff(t) or false
+end
+
+--======================= UI =======================
+local BLACK  = Color3.fromRGB(10,10,10)
+local GREEN  = Color3.fromRGB(0,200,90)
+local YELLOW = Color3.fromRGB(240,200,40)
+local RED    = Color3.fromRGB(220,50,50)
+local GRAY   = Color3.fromRGB(40,40,40)
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "PAIASSINHO_HUB"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = LP:WaitForChild("PlayerGui")
+
+local main = Instance.new("Frame")
+main.Size = UDim2.fromOffset(230, 334)
+main.Position = UDim2.new(0.5, -115, 0.5, -167)
+main.BackgroundColor3 = BLACK
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+main.Parent = gui
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = GREEN; stroke.Thickness = 1.5; stroke.Transparency = 0.4
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -20, 0, 24)
+title.Position = UDim2.new(0, 10, 0, 8)
+title.BackgroundTransparency = 1
+title.Text = "PAIASSINHO HUB"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.TextColor3 = YELLOW
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = main
+
+local cred = Instance.new("TextLabel")
+cred.Size = UDim2.new(1, -20, 0, 14)
+cred.Position = UDim2.new(0, 10, 0, 30)
+cred.BackgroundTransparency = 1
+cred.Text = "BY PAIASSINHO"
+cred.Font = Enum.Font.Gotham
+cred.TextSize = 11
+cred.TextColor3 = GREEN
+cred.TextXAlignment = Enum.TextXAlignment.Left
+cred.Parent = main
+
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.fromOffset(20, 20)
+minBtn.Position = UDim2.new(1, -28, 0, 8)
+minBtn.BackgroundColor3 = GRAY
+minBtn.Text = "–"
+minBtn.TextColor3 = YELLOW
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 14
+minBtn.AutoButtonColor = false
+minBtn.Parent = main
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
+
+local list = Instance.new("Frame")
+list.Size = UDim2.new(1, -20, 1, -70)
+list.Position = UDim2.new(0, 10, 0, 56)
+list.BackgroundTransparency = 1
+list.Parent = main
+Instance.new("UIListLayout", list).Padding = UDim.new(0, 8)
+
+local BTN = {}
+local function mkBtn(k, label)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, 0, 0, 34)
+    b.BackgroundColor3 = GRAY
+    b.Text = label .. "   [OFF]"
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.GothamSemibold
+    b.TextSize = 13
+    b.AutoButtonColor = false
+    b.Parent = list
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+    local ind = Instance.new("Frame")
+    ind.Size = UDim2.fromOffset(8, 8)
+    ind.Position = UDim2.new(1, -18, 0.5, -4)
+    ind.BackgroundColor3 = RED
+    ind.Parent = b
+    Instance.new("UICorner", ind).CornerRadius = UDim.new(1, 0)
+    BTN[k] = { btn = b, ind = ind, label = label }
+end
+mkBtn("AA", "ANTI ALGEMA")
+mkBtn("AK", "AUTOKILL")
+mkBtn("SK", "SPAWNKILL")
+mkBtn("IJ", "INFINITE JUMP")
+mkBtn("NC", "NOCLIP")
+mkBtn("TP", "TP (3 INICIAIS)")
+
+local mini = false
+minBtn.MouseButton1Click:Connect(function()
+    mini = not mini
+    T:Create(main, TweenInfo.new(0.25), {
+        Size = mini and UDim2.fromOffset(230, 48) or UDim2.fromOffset(230, 334)
+    }):Play()
+    list.Visible = not mini
+    minBtn.Text = mini and "+" or "–"
+end)
+
+local function refresh(k)
+    local b = BTN[k]; if not b then return end
+    local on = ST[k]
+    b.btn.Text = b.label .. "   [" .. (on and "ON" or "OFF") .. "]"
+    b.ind.BackgroundColor3 = on and GREEN or RED
+    b.btn.BackgroundColor3 = on and Color3.fromRGB(20, 60, 35) or GRAY
+end
+
+--======================= TP UI (caixa de texto) =======================
+local tpBox = Instance.new("TextBox")
+tpBox.Size = UDim2.new(1, 0, 0, 0)
+tpBox.BackgroundColor3 = Color3.fromRGB(20,20,20)
+tpBox.BorderSizePixel = 0
+tpBox.Text = ""
+tpBox.PlaceholderText = "Digite as 3 iniciais do nick..."
+tpBox.PlaceholderColor3 = Color3.fromRGB(140,140,140)
+tpBox.TextColor3 = Color3.new(1,1,1)
+tpBox.Font = Enum.Font.Gotham
+tpBox.TextSize = 12
+tpBox.Visible = false
+tpBox.ClearTextOnFocus = false
+tpBox.Parent = list
+Instance.new("UICorner", tpBox).CornerRadius = UDim.new(0, 8)
+local tpPad = Instance.new("UIPadding", tpBox)
+tpPad.PaddingLeft = UDim.new(0, 8)
+tpPad.PaddingRight = UDim.new(0, 8)
+
+--======================= AUTOKILL =======================
+local AK = {}
+do
+    local monitoring = false
+    local processed = false
+    local listenerConn = nil
+
+    local function isPrisonActive()
+        local pg = LP:FindFirstChild("PlayerGui")
+        if not pg then return false end
+        local ui = pg:FindFirstChild("PrisonResistance")
+        if ui and ui:IsA("ScreenGui") then
+            return ui.Enabled == true
+        end
+        return false
+    end
+
+    local function matar()
+        if not monitoring or processed then return end
+        processed = true
+        pcall(function()
+            local c, _, hum = char()
+            if c and hum then
+                hum.Health = 0
+                c:BreakJoints()
+            end
+        end)
+    end
+
+    local function setupAnimListener(c)
+        local hum = c:WaitForChild("Humanoid", 5)
+        local animator = hum and hum:WaitForChild("Animator", 5)
+        if not animator then return end
+        if listenerConn then listenerConn:Disconnect() end
+        listenerConn = animator.AnimationPlayed:Connect(function(track)
+            if not monitoring or processed then return end
+            if track.Animation and track.Animation.AnimationId == CFG.AK.ANIM_ID then
+                if isPrisonActive() then matar() end
+            end
+        end)
+    end
+
+    function AK.start()
+        if monitoring then return end
+        monitoring = true
+        processed = false
+
+        local pg = LP:WaitForChild("PlayerGui")
+        pg.ChildAdded:Connect(function(child)
+            if monitoring and not processed and child.Name == "PrisonResistance" and child:IsA("ScreenGui") then
+                if child.Enabled then matar() end
+            end
+        end)
+
+        local c = LP.Character
+        if c then setupAnimListener(c) end
+        LP.CharacterAdded:Connect(function(newC) setupAnimListener(newC) end)
+
+        task.spawn(function()
+            while monitoring do
+                if not processed then
+                    local c, _, hum = char()
+                    if c and hum then
+                        if isPrisonActive() then matar() end
+                        local animator = hum:FindFirstChildOfClass("Animator")
+                        if animator then
+                            for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                                if track.Animation and track.Animation.AnimationId == CFG.AK.ANIM_ID then
+                                    if isPrisonActive() then matar() end
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+
+        LP.CharacterAdded:Connect(function()
+            task.wait(1.5)
+            processed = false
+        end)
+    end
+
+    function AK.stop()
+        monitoring = false
+        processed = false
+        if listenerConn then listenerConn:Disconnect(); listenerConn = nil end
+    end
+end
+
+--======================= ANTI ALGEMA =======================
+local AA = {}
+do
+    local conn = nil; local lastAlert = 0
+    function AA.start()
+        if conn then return end
+        conn = R.Heartbeat:Connect(function()
+            if not ST.AA then return end
+            local _, h = char(); if not h then return end
+            local ts = {}
+            for _, pl in ipairs(P:GetPlayers()) do
+                if pl ~= LP and hasEquippedCuff(pl) then
+                    local c = pl.Character; local hr = c and c:FindFirstChild("HumanoidRootPart")
+                    if hr and (hr.Position - h.Position).Magnitude <= CFG.AA.RAD then table.insert(ts, hr) end
+                end
+            end
+            if #ts > 0 and os.clock() - lastAlert > CFG.AA.CD then
+                local o = h.Position; local best, bestScore = nil, math.huge
+                for i = 0, 11 do
+                    local a = (i/12)*math.pi*2; local dir = Vector3.new(math.cos(a), 0, math.sin(a)); local s = 0
+                    for _, th in ipairs(ts) do local v = th.Position - o; v = Vector3.new(v.X, 0, v.Z); if v.Magnitude > 0 then s = s + dir:Dot(v.Unit) end end
+                    if s < bestScore then bestScore = s; best = dir end
+                end
+                if best then pcall(function() h.CFrame = CFrame.new(o + best * CFG.AA.ESCAPE_DIST) end); lastAlert = os.clock() end
+            end
+        end)
+    end
+    function AA.stop() if conn then conn:Disconnect(); conn = nil end end
+end
+
+--======================= SPAWNKILL (0.1s após renascer) =======================
+local SK = {}
+do
+    local saved = nil
+    local dying = false
+    local hbConn = nil
+    local charAddedConn = nil
+    local diedConn = nil
+
+    local function isValidPos(h)
+        return h and h.Position.Y > -100 and h.Position.Y < 100000
+    end
+
+    local function track()
+        if dying then return end
+        local c, h, hum = char()
+        if h and hum and hum.Health > 0 and isValidPos(h) then
+            saved = h.CFrame
+        end
+    end
+
+    local function onDied()
+        dying = true
+        local c, h, hum = char()
+        if h and isValidPos(h) then
+            saved = h.CFrame
+        end
+    end
+
+    local function onSpawn(c)
+        if not ST.SK or not saved then return end
+        task.spawn(function()
+            local h = c:FindFirstChild("HumanoidRootPart")
+            if not h then
+                h = c:WaitForChild("HumanoidRootPart", CFG.SK.TIMEOUT)
+            end
+            if not h then return end
+            task.wait(0.1) -- atraso de 0.1s após renascer
+            if not ST.SK then return end
+            pcall(function() h.CFrame = saved end)
+            dying = false
+        end)
+    end
+
+    local function hookChar(c)
+        if diedConn then diedConn:Disconnect(); diedConn = nil end
+        local hum = c:WaitForChild("Humanoid", 5)
+        if hum then
+            diedConn = hum.Died:Connect(onDied)
+        end
+    end
+
+    function SK.start()
+        if hbConn then return end
+        dying = false
+
+        hbConn = R.Heartbeat:Connect(track)
+
+        charAddedConn = LP.CharacterAdded:Connect(function(c)
+            hookChar(c)
+            onSpawn(c)
+        end)
+
+        local c = LP.Character
+        if c then hookChar(c) end
+    end
+
+    function SK.stop()
+        if hbConn then hbConn:Disconnect(); hbConn = nil end
+        if charAddedConn then charAddedConn:Disconnect(); charAddedConn = nil end
+        if diedConn then diedConn:Disconnect(); diedConn = nil end
+        dying = false
+    end
+end
+
+--======================= INFINITE JUMP =======================
+local IJ = {}
+do
+    local conn = nil
+    function IJ.start()
+        if conn then return end
+        conn = U.JumpRequest:Connect(function()
+            if not ST.IJ then return end
+            local _, _, hum = char()
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end)
+    end
+    function IJ.stop() if conn then conn:Disconnect(); conn = nil end end
+end
+
+--======================= NOCLIP =======================
+local NC = {}
+do
+    local stepConn = nil
+    local respawnConn = nil
+
+    local function apply(c, state)
+        if not c then return end
+        for _, d in ipairs(c:GetDescendants()) do
+            if d:IsA("BasePart") then
+                d.CanCollide = state
+            end
+        end
+    end
+
+    function NC.start()
+        if stepConn then return end
+        apply(LP.Character, false)
+        stepConn = R.Stepped:Connect(function()
+            if not ST.NC then return end
+            apply(LP.Character, false)
+        end)
+        respawnConn = LP.CharacterAdded:Connect(function(c)
+            task.wait(0.1)
+            if ST.NC then apply(c, false) else apply(c, true) end
+        end)
+    end
+
+    function NC.stop()
+        if stepConn then stepConn:Disconnect(); stepConn = nil end
+        if respawnConn then respawnConn:Disconnect(); respawnConn = nil end
+        apply(LP.Character, true)
+        local n = 0
+        task.spawn(function()
+            while n < 30 do
+                if ST.NC then break end
+                apply(LP.Character, true)
+                n = n + 1
+                task.wait()
+            end
+        end)
+    end
+end
+
+--======================= TP (3 INICIAIS) =======================
+local TP = {}
+do
+    local findTarget = function(prefix)
+        prefix = string.lower(prefix)
+        for _, pl in ipairs(P:GetPlayers()) do
+            if pl ~= LP then
+                local nick = string.lower(pl.Name)
+                if string.sub(nick, 1, #prefix) == prefix then
+                    return pl
+                end
+            end
+        end
+        return nil
+    end
+
+    function TP.go(prefix)
+        prefix = string.gsub(prefix or "", "%s", "")
+        if #prefix < 1 then
+            tpBox.PlaceholderText = "Digite as 3 iniciais do nick..."
+            return
+        end
+
+        local target = findTarget(prefix)
+        if not target then
+            tpBox.Text = ""
+            tpBox.PlaceholderText = "Ninguém com '" .. prefix .. "'"
+            return
+        end
+
+        local tc = target.Character
+        local thr = tc and tc:FindFirstChild("HumanoidRootPart")
+        if not thr then
+            tpBox.Text = ""
+            tpBox.PlaceholderText = target.Name .. " sem personagem"
+            return
+        end
+
+        local c, hr = char()
+        if not hr then
+            tpBox.Text = ""
+            tpBox.PlaceholderText = "Você sem personagem"
+            return
+        end
+
+        local targetCF = thr.CFrame
+        local frontOffset = targetCF.LookVector * 4
+        local destCF = CFrame.new(targetCF.Position + frontOffset, targetCF.Position + frontOffset + targetCF.LookVector)
+
+        pcall(function() hr.CFrame = destCF end)
+
+        tpBox.Text = ""
+        tpBox.PlaceholderText = "TP -> " .. target.Name
+    end
+end
+
+--======================= CLIQUES =======================
+for k, b in pairs(BTN) do
+    b.btn.MouseButton1Click:Connect(function()
+        ST[k] = not ST[k]
+        refresh(k)
+        if k == "AA" then
+            if ST.AA then AA.start() else AA.stop() end
+        elseif k == "AK" then
+            if ST.AK then AK.start() else AK.stop() end
+        elseif k == "SK" then
+            if ST.SK then SK.start() else SK.stop() end
+        elseif k == "IJ" then
+            if ST.IJ then IJ.start() else IJ.stop() end
+        elseif k == "NC" then
+            if ST.NC then NC.start() else NC.stop() end
+        elseif k == "TP" then
+            tpBox.Visible = not tpBox.Visible
+            if tpBox.Visible then
+                tpBox.Size = UDim2.new(1, 0, 0, 34)
+                tpBox.Text = ""
+                tpBox:CaptureFocus()
+            else
+                tpBox.Size = UDim2.new(1, 0, 0, 0)
+            end
+        end
+    end)
+end
+
+-- Enter na caixa de texto = teleportar
+tpBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        TP.go(tpBox.Text)
+    end
+end)
+
+refresh("AK")
+AK.start()
+
+print("[PAIASSINHO HUB] BY PAIASSINHO — V31 (Autokill no milissegundo exato).")
